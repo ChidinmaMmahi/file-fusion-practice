@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build, Push and Deploy
 
 on:
   push:
@@ -25,3 +25,15 @@ jobs:
           context: .
           push: true
           tags: chidinmammahi/file-fusion:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull chidinmammahi/file-fusion:latest
+            docker stop file-fusion || true
+            docker rm file-fusion || true
+            docker run -d --name file-fusion -p 8080:80 chidinmammahi/file-fusion:latest
