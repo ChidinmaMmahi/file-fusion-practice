@@ -12,7 +12,7 @@ export const Header = () => {
                     <HiOutlineDocumentDuplicate className="text-2xl text-accent" />
                 </div>
                 <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-                    Docs Weaver
+                    Docs Weaverrrr
                 </h1>
                 <button
                     onClick={toggleTheme}
