@@ -1,4 +1,4 @@
-
+import BackendTest from "./components/BackendTest";
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 import { useEffect } from "react";
@@ -28,6 +28,7 @@ function App() {
           <Route path='/' element={<Home />} />
           <Route path='/review' element={<SourcesReview />} />
           <Route path='/draft' element={<DraftModification />} />
+          <Route path='/backend' element={<BackendTest />} />
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center py-20 text-text-muted">
               <span className="text-6xl mb-4">404</span>
