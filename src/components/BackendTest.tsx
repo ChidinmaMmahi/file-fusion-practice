@@ -10,7 +10,7 @@ export default function BackendTest() {
   const [files, setFiles] = useState<BackendFile[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/files")
+    fetch("/api/files")
       .then((response) => response.json())
       .then((data) => setFiles(data))
       .catch((error) => console.error("Backend error:", error));

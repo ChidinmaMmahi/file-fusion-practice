@@ -1,4 +1,4 @@
-name: Build, Push and Deploy - Final Test
+name: Build, Push and Deploy
 
 on:
   push:
@@ -19,12 +19,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: chidinmammahi/file-fusion:latest
+          tags: chidinmammahi/file-fusion-frontend:latest
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: chidinmammahi/file-fusion-backend:latest
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
@@ -33,7 +40,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull chidinmammahi/file-fusion:latest
-            docker stop file-fusion || true
-            docker rm file-fusion || true
-            docker run -d --name file-fusion -p 8080:80 chidinmammahi/file-fusion:latest
+            cd /var/www/file-fusion
+            docker compose pull
+            docker compose up -d
