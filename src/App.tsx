@@ -1,11 +1,11 @@
-import BackendTest from "./components/BackendTest";
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 import { useEffect } from "react";
 import { getAllFilesFromDB } from "../src/lib";
 import { useFileStore } from "../src/store";
-import { DraftModification, Home, SourcesReview } from './pages'
+import { DraftModification, Home, Login, Register, SourcesReview } from './pages'
 import { Header, MouseGlow } from './components'
+import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute'
 
 function App() {
   const setFiles = useFileStore((state) => state.setFiles);
@@ -17,7 +17,7 @@ function App() {
     };
 
     loadFiles();
-  }, []);
+  }, [setFiles]);
 
   return (
     <div className='min-h-screen w-full flex flex-col bg-base'>
@@ -25,10 +25,16 @@ function App() {
       <Header />
       <main className="flex-1 relative">
         <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/review' element={<SourcesReview />} />
-          <Route path='/draft' element={<DraftModification />} />
-          <Route path='/backend' element={<BackendTest />} />
+          <Route element={<PublicOnlyRoute />}>
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
+          </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path='/' element={<Home />} />
+            <Route path='/review' element={<SourcesReview />} />
+            <Route path='/draft' element={<DraftModification />} />
+            <Route path='/draft/:id' element={<DraftModification />} />
+          </Route>
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center py-20 text-text-muted">
               <span className="text-6xl mb-4">404</span>
@@ -41,4 +47,4 @@ function App() {
   )
 }
 
-export default App     
+export default App

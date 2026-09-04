@@ -1,3 +1,5 @@
 export * from "./Home"
 export * from "./sources-review"
 export * from "./DraftModification"
+export * from "./Login"
+export * from "./Register"

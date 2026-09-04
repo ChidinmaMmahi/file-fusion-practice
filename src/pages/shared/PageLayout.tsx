@@ -13,9 +13,12 @@ type PageLayoutProps = {
     onButtonClick?: () => void;
     classname?: string;
     buttonDisabled?: boolean;
+    secondaryButtonLabel?: string;
+    onSecondaryButtonClick?: () => void;
+    secondaryButtonDisabled?: boolean;
 }
 
-export const PageLayout = ({ title, subtitle, children, notice, buttonLabel, navigateTo, previousPage, onButtonClick, classname, buttonDisabled }: PageLayoutProps) => {
+export const PageLayout = ({ title, subtitle, children, notice, buttonLabel, navigateTo, previousPage, onButtonClick, classname, buttonDisabled, secondaryButtonLabel, onSecondaryButtonClick, secondaryButtonDisabled }: PageLayoutProps) => {
     const navigate = useNavigate();
 
     const handleButtonClick = () => {
@@ -55,9 +58,21 @@ export const PageLayout = ({ title, subtitle, children, notice, buttonLabel, nav
                     <p className="text-sm text-text-secondary leading-relaxed">{notice}</p>
                 </div>
             }
-            {buttonLabel && <div className="flex justify-end mt-8">
-                <Button label={buttonLabel} onClick={handleButtonClick} disabled={buttonDisabled} />
-            </div>}
+            {(buttonLabel || secondaryButtonLabel) && (
+                <div className="flex justify-end gap-3 mt-8 flex-wrap">
+                    {secondaryButtonLabel && (
+                        <Button
+                            label={secondaryButtonLabel}
+                            variant="secondary"
+                            onClick={onSecondaryButtonClick}
+                            disabled={secondaryButtonDisabled}
+                        />
+                    )}
+                    {buttonLabel && (
+                        <Button label={buttonLabel} onClick={handleButtonClick} disabled={buttonDisabled} />
+                    )}
+                </div>
+            )}
         </div>
     )
 }

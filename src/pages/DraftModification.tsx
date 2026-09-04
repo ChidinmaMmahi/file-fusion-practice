@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFileStore } from "../store";
-import { getFileFromDB, readFileContent } from "../lib";
+import { api, getFileFromDB, readFileContent } from "../lib";
 import { PageLayout } from "./shared";
 import { RichTextEditor, DownloadModal } from "../components";
 
 export const DraftModification = () => {
+    const { id: draftId } = useParams();
+    const navigate = useNavigate();
     const files = useFileStore((state) => state.files);
     const note = useFileStore((state) => state.note);
     const sourceOrder = useFileStore((state) => state.sourceOrder);
@@ -14,13 +17,48 @@ export const DraftModification = () => {
     const [error, setError] = useState<string | null>(null);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [retryKey, setRetryKey] = useState(0);
+    const [saving, setSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    const loadedIdRef = useRef<string | null>(null);
 
     useEffect(() => {
+        if (!draftId) return;
+        if (loadedIdRef.current === draftId) {
+            setIsLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        const loadDraft = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const { draft } = await api.getDraft(draftId);
+                if (cancelled) return;
+                setHtmlContent(draft.htmlContent);
+                loadedIdRef.current = draftId;
+                setIsLoading(false);
+            } catch (err) {
+                if (cancelled) return;
+                setError(err instanceof Error ? err.message : "Failed to load draft");
+                setIsLoading(false);
+            }
+        };
+
+        loadDraft();
+        return () => {
+            cancelled = true;
+        };
+    }, [draftId, retryKey]);
+
+    useEffect(() => {
+        if (draftId) return;
+
         const compileContent = async () => {
             try {
                 const htmlParts: string[] = [];
 
-                let orderedItems = sourceOrder.length > 0
+                const orderedItems = sourceOrder.length > 0
                     ? sourceOrder.filter((item) => {
                         if (item.type === "note") return note.trim().length > 0;
                         return files.some((f) => f.name === item.name);
@@ -62,9 +100,7 @@ export const DraftModification = () => {
                     }
                 }
 
-                const compiledHtml = htmlParts.join("");
-
-                setHtmlContent(compiledHtml);
+                setHtmlContent(htmlParts.join(""));
                 setIsLoading(false);
             } catch (err) {
                 console.error("Error compiling content:", err);
@@ -74,23 +110,53 @@ export const DraftModification = () => {
         };
 
         compileContent();
-    }, [files, note, sourceOrder, retryKey]);
+    }, [draftId, files, note, sourceOrder, retryKey]);
 
     const handleDownloadClick = () => {
         setIsDownloadModalOpen(true);
+    };
+
+    const handleSaveDraft = async () => {
+        if (!htmlContent) return;
+        setSaving(true);
+        setSaveMessage(null);
+        try {
+            if (draftId) {
+                await api.updateDraft(draftId, {
+                    htmlContent,
+                    note,
+                    sourceOrder,
+                });
+                setSaveMessage("Draft saved");
+            } else {
+                const { draft } = await api.createDraft({
+                    htmlContent,
+                    note,
+                    sourceOrder,
+                });
+                loadedIdRef.current = draft.id;
+                setSaveMessage("Draft saved");
+                navigate(`/draft/${draft.id}`, { replace: true });
+            }
+        } catch (err) {
+            setSaveMessage(err instanceof Error ? err.message : "Could not save draft");
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (isLoading) {
         return (
             <PageLayout
                 title="Generating Draft"
-                subtitle="Compiling your sources..."
-                onButtonClick={handleDownloadClick}
-                previousPage="/review"
+                subtitle={draftId ? "Loading your saved draft..." : "Compiling your sources..."}
+                previousPage={draftId ? "/" : "/review"}
             >
                 <div className="flex flex-col justify-center items-center py-20">
                     <div className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-text-muted text-sm">Weaving your documents together...</p>
+                    <p className="text-text-muted text-sm">
+                        {draftId ? "Opening your draft..." : "Weaving your documents together..."}
+                    </p>
                 </div>
             </PageLayout>
         );
@@ -98,6 +164,7 @@ export const DraftModification = () => {
 
     if (error) {
         const handleRetry = () => {
+            loadedIdRef.current = null;
             setError(null);
             setIsLoading(true);
             setRetryKey((k) => k + 1);
@@ -109,7 +176,7 @@ export const DraftModification = () => {
                 subtitle="Something went wrong"
                 buttonLabel="Try Again"
                 onButtonClick={handleRetry}
-                previousPage="/review"
+                previousPage={draftId ? "/" : "/review"}
             >
                 <div className="p-5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
                     {error}
@@ -122,13 +189,17 @@ export const DraftModification = () => {
         <>
             <PageLayout
                 title="Your Draft"
-                subtitle="Review and edit your compiled document"
-                buttonLabel={htmlContent && "Download"}
+                subtitle="Review and edit your compiled document. Save a draft if you are not finished."
+                buttonLabel={htmlContent ? "Download" : undefined}
                 onButtonClick={handleDownloadClick}
-                previousPage="/review"
+                secondaryButtonLabel={htmlContent ? (saving ? "Saving..." : "Save draft") : undefined}
+                onSecondaryButtonClick={handleSaveDraft}
+                secondaryButtonDisabled={saving}
+                previousPage={draftId ? "/" : "/review"}
             >
                 {htmlContent ? (
                     <RichTextEditor
+                        key={draftId ?? "new-draft"}
                         content={htmlContent}
                         onChange={(html) => setHtmlContent(html)}
                     />
@@ -137,6 +208,9 @@ export const DraftModification = () => {
                         <p className="text-lg">No content to display</p>
                         <p className="text-sm mt-1">Please add some files or text to get started</p>
                     </div>
+                )}
+                {saveMessage && (
+                    <p className="mt-4 text-sm text-text-secondary text-right">{saveMessage}</p>
                 )}
             </PageLayout>
 

@@ -4,9 +4,10 @@ type ButtonProps = {
     onClick?: () => void;
     variant?: 'primary' | 'secondary' | 'ghost'
     disabled?: boolean
+    type?: 'button' | 'submit'
 }
 
-export const Button = ({ label, extraClassnames, onClick, variant = 'primary', disabled = false }: ButtonProps) => {
+export const Button = ({ label, extraClassnames, onClick, variant = 'primary', disabled = false, type = 'button' }: ButtonProps) => {
     const baseStyles = "relative px-7 py-3.5 rounded-full font-medium text-base overflow-hidden transition-all duration-300 ease-out"
 
     const variants = {
@@ -17,6 +18,7 @@ export const Button = ({ label, extraClassnames, onClick, variant = 'primary', d
 
     return (
         <button
+            type={type}
             className={`${baseStyles} ${variants[variant]} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"} ${extraClassnames}`}
             onClick={onClick}
             disabled={disabled}
