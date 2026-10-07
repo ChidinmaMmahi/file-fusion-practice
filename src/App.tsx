@@ -1,24 +1,10 @@
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
-import { useEffect } from "react";
-import { getAllFilesFromDB } from "../src/lib";
-import { useFileStore } from "../src/store";
 import { DraftModification, Home, Login, Register, SourcesReview } from './pages'
 import { Header, MouseGlow } from './components'
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute'
 
 function App() {
-  const setFiles = useFileStore((state) => state.setFiles);
-
-  useEffect(() => {
-    const loadFiles = async () => {
-      const storedFiles = await getAllFilesFromDB();
-      setFiles(storedFiles);
-    };
-
-    loadFiles();
-  }, [setFiles]);
-
   return (
     <div className='min-h-screen w-full flex flex-col bg-base'>
       <MouseGlow />

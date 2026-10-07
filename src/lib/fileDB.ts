@@ -25,3 +25,8 @@ export const getFileFromDB = async (name: string): Promise<File | undefined> => 
   const db = await dbPromise;
   return await db.get("files", name);
 };
+
+export const clearAllFilesFromDB = async () => {
+  const db = await dbPromise;
+  await db.clear("files");
+};

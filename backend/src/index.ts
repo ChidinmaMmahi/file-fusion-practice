@@ -7,11 +7,14 @@ import { draftsRouter } from "./routes/drafts.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const clientOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: [clientOrigin, "http://127.0.0.1:5173"],
+    origin: [...clientOrigins, "http://127.0.0.1:5173", "http://localhost:8080"],
     credentials: true,
   }),
 );
@@ -28,6 +31,6 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/drafts", draftsRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend running on port ${PORT}`);
 });

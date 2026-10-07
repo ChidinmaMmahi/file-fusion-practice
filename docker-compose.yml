@@ -8,5 +8,14 @@ services:
 
   backend:
     image: chidinmammahi/file-fusion-backend:latest
+    environment:
+      PORT: "3000"
+      DATABASE_URL: file:../data/dev.db
+      JWT_SECRET: ${JWT_SECRET:-change-this-dev-secret}
+    volumes:
+      - backend-data:/app/data
     expose:
       - "3000"
+
+volumes:
+  backend-data:

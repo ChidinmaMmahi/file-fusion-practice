@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFileStore } from "../store";
-import { api, getFileFromDB, readFileContent } from "../lib";
+import { api, clearAllFilesFromDB, getFileFromDB, readFileContent } from "../lib";
 import { PageLayout } from "./shared";
-import { RichTextEditor, DownloadModal } from "../components";
+import { RichTextEditor, DownloadModal, SavedDraftModal } from "../components";
 
 export const DraftModification = () => {
     const { id: draftId } = useParams();
@@ -18,7 +18,8 @@ export const DraftModification = () => {
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [retryKey, setRetryKey] = useState(0);
     const [saving, setSaving] = useState(false);
-    const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [showSavedModal, setShowSavedModal] = useState(false);
     const loadedIdRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -119,7 +120,7 @@ export const DraftModification = () => {
     const handleSaveDraft = async () => {
         if (!htmlContent) return;
         setSaving(true);
-        setSaveMessage(null);
+        setSaveError(null);
         try {
             if (draftId) {
                 await api.updateDraft(draftId, {
@@ -127,7 +128,6 @@ export const DraftModification = () => {
                     note,
                     sourceOrder,
                 });
-                setSaveMessage("Draft saved");
             } else {
                 const { draft } = await api.createDraft({
                     htmlContent,
@@ -135,11 +135,15 @@ export const DraftModification = () => {
                     sourceOrder,
                 });
                 loadedIdRef.current = draft.id;
-                setSaveMessage("Draft saved");
-                navigate(`/draft/${draft.id}`, { replace: true });
             }
+            await clearAllFilesFromDB();
+            useFileStore.getState().reset();
+            setShowSavedModal(true);
+            window.setTimeout(() => {
+                navigate("/", { replace: true });
+            }, 2000);
         } catch (err) {
-            setSaveMessage(err instanceof Error ? err.message : "Could not save draft");
+            setSaveError(err instanceof Error ? err.message : "Could not save draft");
         } finally {
             setSaving(false);
         }
@@ -194,7 +198,7 @@ export const DraftModification = () => {
                 onButtonClick={handleDownloadClick}
                 secondaryButtonLabel={htmlContent ? (saving ? "Saving..." : "Save draft") : undefined}
                 onSecondaryButtonClick={handleSaveDraft}
-                secondaryButtonDisabled={saving}
+                secondaryButtonDisabled={saving || showSavedModal}
                 previousPage={draftId ? "/" : "/review"}
             >
                 {htmlContent ? (
@@ -209,8 +213,8 @@ export const DraftModification = () => {
                         <p className="text-sm mt-1">Please add some files or text to get started</p>
                     </div>
                 )}
-                {saveMessage && (
-                    <p className="mt-4 text-sm text-text-secondary text-right">{saveMessage}</p>
+                {saveError && (
+                    <p className="mt-4 text-sm text-red-400 text-right">{saveError}</p>
                 )}
             </PageLayout>
 
@@ -219,6 +223,7 @@ export const DraftModification = () => {
                 onClose={() => setIsDownloadModalOpen(false)}
                 htmlContent={htmlContent}
             />
+            <SavedDraftModal isOpen={showSavedModal} />
         </>
     );
 };

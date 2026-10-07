@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, type ApiUser } from "../lib/api";
+import { syncLocalWorkspace } from "../lib/workspace";
 
 type AuthContextValue = {
   user: ApiUser | null;
@@ -28,7 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     api
       .me()
-      .then((data) => {
+      .then(async (data) => {
+        if (cancelled) return;
+        await syncLocalWorkspace(data.user.id);
         if (!cancelled) setUser(data.user);
       })
       .catch(() => {
@@ -45,16 +48,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await api.login({ email, password });
+    await syncLocalWorkspace(data.user.id);
     setUser(data.user);
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     const data = await api.register({ name, email, password });
+    await syncLocalWorkspace(data.user.id);
     setUser(data.user);
   }, []);
 
   const logout = useCallback(async () => {
-    await api.logout();
+    await api.logout().catch(() => undefined);
+    await syncLocalWorkspace(null);
     setUser(null);
   }, []);
 

@@ -27,11 +27,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(path, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    throw new Error("Cannot reach the server. Start the backend with npm run dev:backend, then try again.");
+  }
 
   if (response.status === 204) {
     return undefined as T;
