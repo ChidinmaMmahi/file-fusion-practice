@@ -40,6 +40,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /var/www/file-fusion
-            docker compose pull
-            docker compose up -d
+            cd /home/ec2-user/file-fusion-practice
+            docker-compose pull
+            docker-compose up -d
